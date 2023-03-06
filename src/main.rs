@@ -15,7 +15,9 @@ use dns_lookup::lookup_host;
 struct Args {
     /// File with list of names to query
     #[arg(short, long)]
-    file: PathBuf,
+    input_file: PathBuf,
+    #[arg(short, long)]
+    output_file: PathBuf,
 }
 
 #[derive(Debug, Serialize)]
@@ -31,20 +33,21 @@ fn main() -> Result<()> {
     info!("Parsing command-line arguments");
     let args = Args::parse();
 
-    debug!("`&args.file`: {:?}", &args.file);
+    debug!("`&args.input_file`: {:?}", &args.input_file);
+    debug!("`&args.output_file`: {:?}", &args.output_file);
 
-    info!("Opening `{}` for reading", &args.file.display());
-    let file = File::open(&args.file).with_context(||
-        format!("Failed to open `{}`", &args.file.display()))?;
+    info!("Opening `{}` for reading", &args.input_file.display());
+    let file = File::open(&args.input_file).with_context(||
+        format!("Failed to open `{}`", &args.input_file.display()))?;
     
     let reader = BufReader::new(file);
 
     let mut sites = Vec::new();
 
-    info!("Reading lines from `{}` into `Site` structs", &args.file.display());
+    info!("Reading lines from `{}` into `Site` structs", &args.input_file.display());
     for line in reader.lines() {
         let line = line.with_context(||
-            format!("Failed to read `{}`", &args.file.display()))?;
+            format!("Failed to read `{}`", &args.input_file.display()))?;
 
         debug!("`&line`: {:?}", &line);
         sites.push(Site {
@@ -55,15 +58,19 @@ fn main() -> Result<()> {
     }
 
     debug!("`&sites`: {:?}", &sites);
-    debug!("As JSON: {}", serde_json::to_string_pretty(&sites).unwrap());
+
+    // Before going through the work of making the DNS query,
+    // make sure that we're able to open the output file for writing.
+    let mut output_file = File::create(&args.output_file).with_context(||
+        format!("Failed to create `{}`", &args.output_file.display()))?;
 
     for site in sites.iter_mut() {
         debug!("Running DNS lookup on `{}`...", &site.host);
-        let addrs = match lookup_host(&site.host) {
+        match lookup_host(&site.host) {
             Ok(addrs) => {
                 debug!("`&addrs`: {:?}", &addrs);
                 site.addrs = addrs;
-                let response = match reqwest::blocking::get(format!("http://{}", &site.host)) {
+                match reqwest::blocking::get(format!("http://{}", &site.host)) {
                     Ok(resp) => {
                         debug!("`&response.headers`: {:?}", &resp.headers());
                         site.headers = resp.headers().clone();
@@ -77,9 +84,7 @@ fn main() -> Result<()> {
         };
     }
 
-    let mut output_file = File::create("output.txt").with_context(||
-        format!("Failed to create `{}`", "output.txt"))?;
-    
+    // Write the resulting structure to an output file as JSON.
     serde_json::to_writer_pretty(&mut output_file, &sites).with_context(||
         format!("Failed to write to `{}`", "output.txt"))?;
 
