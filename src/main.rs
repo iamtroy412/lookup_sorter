@@ -1,6 +1,7 @@
 use clap::Parser;
 use log::{info, warn, debug};
 use reqwest::header::HeaderMap;
+use reqwest::redirect::Policy;
 use std::path::PathBuf;
 use std::fs::File;
 use std::io::{prelude::*, BufReader};
@@ -72,7 +73,8 @@ fn main() -> Result<()> {
             Ok(addrs) => {
                 debug!("`&addrs`: {:?}", &addrs);
                 site.addrs = addrs;
-                match reqwest::blocking::get(format!("http://{}", &site.host)) {
+                let client = &reqwest::blocking::Client::builder().redirect(Policy::none()).build()?;
+                match client.get(format!("http://{}", &site.host)).send(){
                     Ok(resp) => {
                         debug!("`&response.headers`: {:?}", &resp.headers());
                         site.headers = resp.headers().clone();
