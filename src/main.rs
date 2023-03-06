@@ -3,8 +3,10 @@ use log::{info, warn, debug};
 use std::path::PathBuf;
 use std::fs::File;
 use std::io::{prelude::*, BufReader};
-use std::sync::Arc;
-use anyhow::{Context, Result, Ok};
+use anyhow::{Context, Result};
+use serde::Serialize;
+use std::net::IpAddr;
+use dns_lookup::lookup_host;
 
 /// A program for making DNS queries on a list of names, then trying to determine if they are on the F5
 #[derive(Parser, Debug)]
@@ -15,9 +17,10 @@ struct Args {
     file: PathBuf,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 struct Site {
     host: String,
+    addrs: Vec<IpAddr>,
 }
 
 fn main() -> Result<()> {
@@ -43,10 +46,29 @@ fn main() -> Result<()> {
         debug!("`&line`: {:?}", &line);
         sites.push(Site {
             host: line.trim().to_string(),
+            addrs: Vec::new(),
         });
     }
 
     debug!("`&sites`: {:?}", &sites);
+    debug!("As JSON: {}", serde_json::to_string_pretty(&sites).unwrap());
+
+    for site in sites.iter_mut() {
+        debug!("Running DNS lookup on `{}`...", &site.host);
+        let addrs = match lookup_host(&site.host) {
+            Ok(addrs) => {
+                debug!("`&addrs`: {:?}", &addrs);
+                site.addrs = addrs;
+            },
+            Err(e) => warn!("`&site.host`: {}", e),
+        };
+    }
+
+    let mut output_file = File::create("output.txt").with_context(||
+        format!("Failed to create `{}`", "output.txt"))?;
+    
+    serde_json::to_writer_pretty(&mut output_file, &sites).with_context(||
+        format!("Failed to write to `{}`", "output.txt"))?;
 
     Ok(())
 }
