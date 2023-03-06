@@ -10,7 +10,7 @@ use serde::Serialize;
 use std::net::IpAddr;
 use dns_lookup::lookup_host;
 
-/// A program for making DNS queries on a list of names, then trying to determine if they are on the F5
+/// A program for making DNS queries on a list of names, then grabbing their request headers.
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {

@@ -1,6 +1,6 @@
 [package]
 name = "lookup_sorter"
-description = "A program for making DNS queries on a list of names, then trying to determine if they are on the F5"
+description = "A program for making DNS queries on a list of names, then grabbing their request headers."
 authors = ["Troy Caro <troy.caro@pitt.edu>"]
 version = "0.1.0"
 edition = "2021"
