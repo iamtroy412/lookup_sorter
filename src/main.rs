@@ -9,6 +9,7 @@ use anyhow::{Context, Result};
 use serde::Serialize;
 use std::net::IpAddr;
 use dns_lookup::lookup_host;
+use std::time::Duration;
 
 /// A program for making DNS queries on a list of names, then grabbing their request headers.
 #[derive(Parser, Debug)]
@@ -75,13 +76,13 @@ fn main() -> Result<()> {
                 site.addrs = addrs;
                 let client = &reqwest::blocking::Client::builder().redirect(Policy::none()).build()?;
                 info!("Connecting to `{}`...", &site.host);
-                match client.get(format!("http://{}", &site.host)).send(){
+                match client.get(format!("http://{}", &site.host)).timeout(Duration::from_secs(3)).send(){
                     Ok(resp) => {
                         debug!("`&response.headers`: {:?}", &resp.headers());
                         site.headers = resp.headers().clone();
                     },
                     Err(err) => {
-                        warn!("`&response.headers`: {:?}", &err);
+                        warn!("Unable to make connection: {:?}", &err);
                     }
                 };
             },
