@@ -89,7 +89,7 @@ fn main() -> Result<()> {
     // Write the resulting structure to an output file as JSON.
     info!("Writing Site structs to `{}`", &args.output_file.display());
     serde_json::to_writer_pretty(&mut output_file, &sites).with_context(||
-        format!("Failed to write to `{}`", "output.txt"))?;
+        format!("Failed to write to `{}`", &args.output_file.display()))?;
 
     Ok(())
 }
