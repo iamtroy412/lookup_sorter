@@ -7,7 +7,6 @@ use std::io::{prelude::*, BufReader};
 use anyhow::{Context, Result};
 use serde::Serialize;
 use std::net::IpAddr;
-use std::collections::HashMap;
 use dns_lookup::lookup_host;
 
 /// A program for making DNS queries on a list of names, then trying to determine if they are on the F5
@@ -23,7 +22,8 @@ struct Args {
 struct Site {
     host: String,
     addrs: Vec<IpAddr>,
-    headers: HashMap<String, Vec<String>>,
+    #[serde(with = "http_serde::header_map")]
+    headers: HeaderMap,
 }
 
 fn main() -> Result<()> {
@@ -50,7 +50,7 @@ fn main() -> Result<()> {
         sites.push(Site {
             host: line.trim().to_string(),
             addrs: Vec::new(),
-            headers: HashMap::new(),
+            headers: HeaderMap::new(),
         });
     }
 
@@ -66,6 +66,7 @@ fn main() -> Result<()> {
                 let response = match reqwest::blocking::get(format!("http://{}", &site.host)) {
                     Ok(resp) => {
                         debug!("`&response.headers`: {:?}", &resp.headers());
+                        site.headers = resp.headers().clone();
                     },
                     Err(err) => {
                         warn!("`&response.headers`: {:?}", &err);
