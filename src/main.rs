@@ -74,6 +74,7 @@ fn main() -> Result<()> {
                 debug!("`&addrs`: {:?}", &addrs);
                 site.addrs = addrs;
                 let client = &reqwest::blocking::Client::builder().redirect(Policy::none()).build()?;
+                info!("Connecting to `{}`...", &site.host);
                 match client.get(format!("http://{}", &site.host)).send(){
                     Ok(resp) => {
                         debug!("`&response.headers`: {:?}", &resp.headers());
