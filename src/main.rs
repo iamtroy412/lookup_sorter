@@ -16,6 +16,7 @@ struct Args {
     /// File with list of names to query
     #[arg(short, long)]
     input_file: PathBuf,
+    // Output JSON file with results
     #[arg(short, long)]
     output_file: PathBuf,
 }
@@ -61,11 +62,12 @@ fn main() -> Result<()> {
 
     // Before going through the work of making the DNS query,
     // make sure that we're able to open the output file for writing.
+    info!("Opening `{}` for writing", &args.output_file.display());
     let mut output_file = File::create(&args.output_file).with_context(||
         format!("Failed to create `{}`", &args.output_file.display()))?;
 
     for site in sites.iter_mut() {
-        debug!("Running DNS lookup on `{}`...", &site.host);
+        info!("Running DNS lookup on `{}`...", &site.host);
         match lookup_host(&site.host) {
             Ok(addrs) => {
                 debug!("`&addrs`: {:?}", &addrs);
@@ -85,6 +87,7 @@ fn main() -> Result<()> {
     }
 
     // Write the resulting structure to an output file as JSON.
+    info!("Writing Site structs to `{}`", &args.output_file.display());
     serde_json::to_writer_pretty(&mut output_file, &sites).with_context(||
         format!("Failed to write to `{}`", "output.txt"))?;
 
