@@ -60,7 +60,7 @@ fn main() -> Result<()> {
                 debug!("`&addrs`: {:?}", &addrs);
                 site.addrs = addrs;
             },
-            Err(e) => warn!("`&site.host`: {}", e),
+            Err(e) => warn!("`&site.host`: {} Error: {}", &site.host, e),
         };
     }
 
