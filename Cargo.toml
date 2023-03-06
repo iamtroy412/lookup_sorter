@@ -1,0 +1,10 @@
+[package]
+name = "lookup_sorter"
+description = "A program for making DNS queries on a list of names, then trying to determine if they are on the F5"
+authors = ["Troy Caro <troy.caro@pitt.edu>"]
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
