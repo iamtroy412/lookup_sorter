@@ -1,14 +1,14 @@
 use log::{info, warn, debug};
 use reqwest::header::HeaderMap;
 use reqwest::redirect::Policy;
+use anyhow::{Context, Result};
+use serde::Serialize;
+use dns_lookup::lookup_host;
+use std::time::Duration;
 use std::path::PathBuf;
 use std::fs::File;
 use std::io::{prelude::*, BufReader};
-use anyhow::{Context, Result};
-use serde::Serialize;
 use std::net::IpAddr;
-use dns_lookup::lookup_host;
-use std::time::Duration;
 
 #[derive(Debug, Serialize)]
 pub struct Site {
@@ -43,6 +43,11 @@ pub fn build_sites(input_path: &PathBuf) -> Result<Vec<Site>, anyhow::Error> {
 
     debug!("`&sites`: {:?}", &sites);
     Ok(sites)
+}
+
+#[test]
+fn test_build_sites() {
+    // TODO
 }
 
 // look_and_connect takes a Site struct, resolves the IP address of the name, and then

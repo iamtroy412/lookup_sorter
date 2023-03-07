@@ -1,8 +1,8 @@
 use clap::Parser;
 use log::{info, warn, debug};
+use anyhow::{Context, Result};
 use std::path::PathBuf;
 use std::fs::File;
-use anyhow::{Context, Result};
 
 /// A program for making DNS queries on a list of names, then grabbing their request headers.
 #[derive(Parser, Debug)]
