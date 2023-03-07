@@ -48,7 +48,6 @@ pub fn build_sites(input_path: &PathBuf) -> Result<Vec<Site>, anyhow::Error> {
 
 #[test]
 fn test_build_sites() {
-    // TODO
     let file = assert_fs::NamedTempFile::new("sample.txt").unwrap();
     file.write_str("google.com\nasfasdf.asdf\nyahoo.com").unwrap();
 
