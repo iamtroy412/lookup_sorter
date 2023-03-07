@@ -1,3 +1,4 @@
+use assert_fs::prelude::FileWriteStr;
 use log::{info, warn, debug};
 use reqwest::header::HeaderMap;
 use reqwest::redirect::Policy;
@@ -48,6 +49,19 @@ pub fn build_sites(input_path: &PathBuf) -> Result<Vec<Site>, anyhow::Error> {
 #[test]
 fn test_build_sites() {
     // TODO
+    let file = assert_fs::NamedTempFile::new("sample.txt").unwrap();
+    file.write_str("google.com\nasfasdf.asdf\nyahoo.com").unwrap();
+
+    let base_case = vec![
+        Site { host: "google.com".to_owned(), addrs: Vec::new(), headers: HeaderMap::new() },
+        Site { host: "asfasdf.asdf".to_owned(), addrs: Vec::new(), headers: HeaderMap::new() },
+        Site { host: "yahoo.com".to_owned(), addrs: Vec::new(), headers: HeaderMap::new() }
+    ];
+
+    let result = build_sites(&file.path().to_path_buf()).unwrap();
+    assert_eq!(base_case[0].host, result[0].host);
+    assert_eq!(base_case[1].host, result[1].host);
+    assert_eq!(base_case[2].host, result[2].host);
 }
 
 // look_and_connect takes a Site struct, resolves the IP address of the name, and then
