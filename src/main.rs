@@ -31,26 +31,20 @@ struct Site {
     headers: HeaderMap,
 }
 
-fn main() -> Result<()> {
-    env_logger::init();
-    info!("Parsing command-line arguments");
-    let args = Args::parse();
-
-    debug!("`&args.input_file`: {:?}", &args.input_file);
-    debug!("`&args.output_file`: {:?}", &args.output_file);
-
-    info!("Opening `{}` for reading", &args.input_file.display());
-    let file = File::open(&args.input_file).with_context(||
-        format!("Failed to open `{}`", &args.input_file.display()))?;
+// build_sites returns a vector of Site structs, one for each name in the input file.
+fn build_sites(input_path: &PathBuf) -> Result<Vec<Site>, anyhow::Error> {
+    info!("Opening `{}` for reading", &input_path.display());
+    let file = File::open(input_path).with_context(||
+        format!("Failed to open `{}`", &input_path.display()))?;
     
     let reader = BufReader::new(file);
 
     let mut sites = Vec::new();
 
-    info!("Reading lines from `{}` into `Site` structs", &args.input_file.display());
+    info!("Reading lines from `{}` into `Site` structs", &input_path.display());
     for line in reader.lines() {
         let line = line.with_context(||
-            format!("Failed to read `{}`", &args.input_file.display()))?;
+            format!("Failed to read `{}`", &input_path.display()))?;
 
         debug!("`&line`: {:?}", &line);
         sites.push(Site {
@@ -61,7 +55,19 @@ fn main() -> Result<()> {
     }
 
     debug!("`&sites`: {:?}", &sites);
+    Ok(sites)
+}
 
+fn main() -> Result<()> {
+    env_logger::init();
+    info!("Parsing command-line arguments");
+    let args = Args::parse();
+
+    debug!("`&args.input_file`: {:?}", &args.input_file);
+    debug!("`&args.output_file`: {:?}", &args.output_file);
+
+    let mut sites = build_sites(&args.input_file)?;
+    
     // Before going through the work of making the DNS query,
     // make sure that we're able to open the output file for writing.
     info!("Opening `{}` for writing", &args.output_file.display());
