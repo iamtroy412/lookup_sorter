@@ -92,3 +92,13 @@ pub fn look_and_connect(site: &Site) -> Result<(Vec<IpAddr>, HeaderMap), anyhow:
     Ok((addresses, headers))
 
 }
+
+#[test]
+fn test_look_and_connect() {
+    let mut site = Site { host: "google.com".to_owned(), addrs: Vec::new(), headers: HeaderMap::new() };
+
+    (site.addrs, site.headers) = look_and_connect(&site).unwrap();
+    
+    assert!(site.addrs.len() > 0);
+    assert!(site.headers.len() > 0);
+}
