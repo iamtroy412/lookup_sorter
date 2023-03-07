@@ -1,1 +1,5 @@
 /target
+
+# Ignore input and output test files
+output.json
+test.txt
