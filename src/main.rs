@@ -58,6 +58,36 @@ fn build_sites(input_path: &PathBuf) -> Result<Vec<Site>, anyhow::Error> {
     Ok(sites)
 }
 
+// look_and_connect takes a Site struct, resolves the IP address of the name, and then
+// tries to connect to it and record the headers.
+fn look_and_connect(site: &Site) -> Result<(Vec<IpAddr>, HeaderMap), anyhow::Error> {
+    let mut addresses = Vec::<IpAddr>::new();
+    let mut headers = HeaderMap::new();
+    
+    info!("Running DNS lookup on `{}`...", &site.host);
+    match lookup_host(&site.host) {
+        Ok(addrs) => {
+            debug!("`&addrs`: {:?}", &addrs);
+            addresses = addrs;
+            let client = &reqwest::blocking::Client::builder().redirect(Policy::none()).build()?;
+            info!("Connecting to `{}`...", &site.host);
+            match client.get(format!("http://{}", &site.host)).timeout(Duration::from_secs(3)).send(){
+                Ok(resp) => {
+                    debug!("`&response.headers`: {:?}", &resp.headers());
+                    headers = resp.headers().clone();
+                },
+                Err(err) => {
+                    warn!("Unable to make connection: {:?}", &err);
+                }
+            };
+        },
+        Err(e) => warn!("`&site.host`: {} Error: {}", &site.host, e),
+    };
+
+    Ok((addresses, headers))
+
+}
+
 fn main() -> Result<()> {
     env_logger::init();
     info!("Parsing command-line arguments");
@@ -75,25 +105,7 @@ fn main() -> Result<()> {
         format!("Failed to create `{}`", &args.output_file.display()))?;
 
     for site in sites.iter_mut() {
-        info!("Running DNS lookup on `{}`...", &site.host);
-        match lookup_host(&site.host) {
-            Ok(addrs) => {
-                debug!("`&addrs`: {:?}", &addrs);
-                site.addrs = addrs;
-                let client = &reqwest::blocking::Client::builder().redirect(Policy::none()).build()?;
-                info!("Connecting to `{}`...", &site.host);
-                match client.get(format!("http://{}", &site.host)).timeout(Duration::from_secs(3)).send(){
-                    Ok(resp) => {
-                        debug!("`&response.headers`: {:?}", &resp.headers());
-                        site.headers = resp.headers().clone();
-                    },
-                    Err(err) => {
-                        warn!("Unable to make connection: {:?}", &err);
-                    }
-                };
-            },
-            Err(e) => warn!("`&site.host`: {} Error: {}", &site.host, e),
-        };
+        (site.addrs, site.headers) = look_and_connect(site)?;
     }
 
     // Write the resulting structure to an output file as JSON.
