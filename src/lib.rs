@@ -9,7 +9,8 @@ use std::time::Duration;
 use std::path::PathBuf;
 use std::fs::File;
 use std::io::{prelude::*, BufReader};
-use std::net::IpAddr;
+use std::net::{IpAddr, Ipv4Addr};
+use ipnet::Ipv4Net;
 
 #[derive(Debug, Serialize)]
 pub struct Site {
@@ -175,5 +176,38 @@ fn test_bigip_by_header() {
     failed_headers.insert("connection", HeaderValue::from_static("Keep-Alive"));
     failed_headers.insert("content-length", HeaderValue::from_static("0"));
     assert!(!bigip_by_header(&failed_headers));
+}
 
+// bigip_by_ip takes a vector of IpAddr and a vector of Ipv4Nets and returns a bool
+// indicating whether any of the IP addresses matches any of the subnets.
+pub fn bigip_by_ip(ips: &Vec<IpAddr>, subnets: &Vec<Ipv4Net>) -> bool {
+    for ip in ips.iter() {
+        for subnet in subnets.iter() {
+            if let IpAddr::V4(v4) = ip {
+                if subnet.contains(v4) {
+                    return true;
+                }
+            };
+        }
+    }
+    return false;
+}
+
+#[test]
+fn test_bigip_by_ip() {
+    // TODO
+    let mut ips = Vec::new();
+    ips.push(IpAddr::V4(Ipv4Addr::new(192, 168, 0, 1)));
+    ips.push(IpAddr::V4(Ipv4Addr::new(192, 168, 1, 1)));
+
+    let mut subnets = Vec::new();
+    subnets.push("172.16.0.0/24".parse().unwrap());
+    subnets.push("192.168.0.0/24".parse().unwrap());
+
+    assert!(bigip_by_ip(&ips, &subnets));
+}
+
+pub fn build_subnets(input_path: &PathBuf) -> Result<Vec<Ipv4Net>, anyhow::Error> {
+    // TODO
+    Ok(Vec::new())
 }

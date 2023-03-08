@@ -588,6 +588,7 @@ dependencies = [
  "dns-lookup",
  "env_logger",
  "http-serde",
+ "ipnet",
  "log",
  "reqwest",
  "serde",

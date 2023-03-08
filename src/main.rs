@@ -14,6 +14,9 @@ struct Args {
     // Output JSON file with results
     #[arg(short, long)]
     output_file: PathBuf,
+    // File with list of subnets to check against
+    #[arg(short, long)]
+    subnet_file: PathBuf,
 }
 
 fn main() -> Result<()> {
@@ -25,6 +28,8 @@ fn main() -> Result<()> {
     debug!("`&args.output_file`: {:?}", &args.output_file);
 
     let mut sites = lookup_sorter::build_sites(&args.input_file)?;
+
+    let subnets = lookup_sorter::build_subnets(&args.subnet_file)?;
     
     // Before going through the work of making the DNS query,
     // make sure that we're able to open the output file for writing.
@@ -37,6 +42,16 @@ fn main() -> Result<()> {
         match lookup_sorter::bigip_by_header(&site.headers) {
             true => {
                 site.bigip = Some("BigIP by HEADERS".to_owned());
+            },
+            false => {
+                site.bigip = None;
+            }
+        }
+
+        // Quick test
+        match lookup_sorter::bigip_by_ip(&site.addrs, &subnets) {
+            true => {
+                site.bigip = Some("BigIP by IP".to_owned());
             },
             false => {
                 site.bigip = None;
