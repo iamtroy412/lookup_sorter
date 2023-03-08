@@ -1,6 +1,6 @@
 use assert_fs::prelude::FileWriteStr;
 use log::{info, warn, debug};
-use reqwest::header::HeaderMap;
+use reqwest::header::{HeaderMap, HeaderValue};
 use reqwest::redirect::Policy;
 use anyhow::{Context, Result};
 use serde::Serialize;
@@ -17,6 +17,7 @@ pub struct Site {
     pub addrs: Vec<IpAddr>,
     #[serde(with = "http_serde::header_map")]
     pub headers: HeaderMap,
+    pub bigip: Option<String>,
 }
 
 // build_sites returns a vector of Site structs, one for each name in the input file.
@@ -39,6 +40,7 @@ pub fn build_sites(input_path: &PathBuf) -> Result<Vec<Site>, anyhow::Error> {
             host: line.trim().to_string(),
             addrs: Vec::new(),
             headers: HeaderMap::new(),
+            bigip: None,
         });
     }
 
@@ -52,9 +54,9 @@ fn test_build_sites() {
     file.write_str("google.com\nasfasdf.asdf\nyahoo.com").unwrap();
 
     let base_case = vec![
-        Site { host: "google.com".to_owned(), addrs: Vec::new(), headers: HeaderMap::new() },
-        Site { host: "asfasdf.asdf".to_owned(), addrs: Vec::new(), headers: HeaderMap::new() },
-        Site { host: "yahoo.com".to_owned(), addrs: Vec::new(), headers: HeaderMap::new() }
+        Site { host: "google.com".to_owned(), addrs: Vec::new(), headers: HeaderMap::new(), bigip: None },
+        Site { host: "asfasdf.asdf".to_owned(), addrs: Vec::new(), headers: HeaderMap::new(), bigip: None },
+        Site { host: "yahoo.com".to_owned(), addrs: Vec::new(), headers: HeaderMap::new(), bigip: None },
     ];
 
     let result = build_sites(&file.path().to_path_buf()).unwrap();
@@ -95,7 +97,7 @@ pub fn look_and_connect(site: &Site) -> Result<(Vec<IpAddr>, HeaderMap), anyhow:
 
 #[test]
 fn test_look_and_connect() {
-    let mut site = Site { host: "google.com".to_owned(), addrs: Vec::new(), headers: HeaderMap::new() };
+    let mut site = Site { host: "google.com".to_owned(), addrs: Vec::new(), headers: HeaderMap::new(), bigip: None };
 
     (site.addrs, site.headers) = look_and_connect(&site).unwrap();
     
@@ -132,10 +134,46 @@ pub fn look_and_connect2(site: &Site) -> Result<(Vec<IpAddr>, HeaderMap), anyhow
 
 #[test]
 fn test_look_and_connect2() {
-    let mut site = Site { host: "yahoo.com".to_owned(), addrs: Vec::new(), headers: HeaderMap::new() };
+    let mut site = Site { host: "yahoo.com".to_owned(), addrs: Vec::new(), headers: HeaderMap::new(), bigip: None };
 
     (site.addrs, site.headers) = look_and_connect2(&site).unwrap();
     
     assert!(site.addrs.len() > 0);
     assert!(site.headers.len() > 0);
+}
+
+// bigip_by_header takes a HeaderMap and returns a bool indicating whether the
+// `server` header contains the case insensitive string "bigip" or not.
+pub fn bigip_by_header(headers: &HeaderMap) -> bool {
+    match headers.get("server") {
+        Some(val) => {
+            val.to_str().unwrap().to_lowercase().contains("bigip")
+        },
+        None => false
+    }
+}
+
+#[test]
+fn test_bigip_by_header() {
+    let test_cases = vec!["bigip", "BIGIP", "BigIP", "BiGiP"];
+    for test_case in test_cases {
+        let mut headers = HeaderMap::new();
+        headers.insert("server", HeaderValue::from_static(test_case));
+        assert!(bigip_by_header(&headers));
+    }
+
+    let mut mixed_headers = HeaderMap::new();
+    mixed_headers.insert("location", HeaderValue::from_static("www.example.com"));
+    mixed_headers.insert("server", HeaderValue::from_static("bigip"));
+    mixed_headers.insert("connection", HeaderValue::from_static("Keep-Alive"));
+    mixed_headers.insert("content-length", HeaderValue::from_static("0"));
+    assert!(bigip_by_header(&mixed_headers));
+
+    let mut failed_headers = HeaderMap::new();
+    failed_headers.insert("location", HeaderValue::from_static("www.example.com"));
+    failed_headers.insert("server", HeaderValue::from_static("nginx/1.2.3"));
+    failed_headers.insert("connection", HeaderValue::from_static("Keep-Alive"));
+    failed_headers.insert("content-length", HeaderValue::from_static("0"));
+    assert!(!bigip_by_header(&failed_headers));
+
 }

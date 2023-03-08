@@ -34,6 +34,14 @@ fn main() -> Result<()> {
 
     for site in sites.iter_mut() {
         (site.addrs, site.headers) = lookup_sorter::look_and_connect(site)?;
+        match lookup_sorter::bigip_by_header(&site.headers) {
+            true => {
+                site.bigip = Some("BigIP by HEADERS".to_owned());
+            },
+            false => {
+                site.bigip = None;
+            }
+        }
     }
 
     // Write the resulting structure to an output file as JSON.
