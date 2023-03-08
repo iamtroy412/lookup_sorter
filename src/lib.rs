@@ -204,17 +204,17 @@ fn test_bigip_by_header() {
 
 // bigip_by_ip takes a vector of IpAddr and a vector of Ipv4Nets and returns a bool
 // indicating whether any of the IP addresses matches any of the subnets.
-pub fn bigip_by_ip(ips: &Vec<IpAddr>, subnets: &Vec<Ipv4Net>) -> bool {
+pub fn bigip_by_ip(ips: &[IpAddr], subnets: &[Ipv4Net]) -> bool {
     for ip in ips.iter() {
         for subnet in subnets.iter() {
             if let IpAddr::V4(v4) = ip {
                 if subnet.contains(v4) {
-                    return true;
+                    return true
                 }
             };
         }
     }
-    return false;
+    false
 }
 
 #[test]
