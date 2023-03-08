@@ -102,3 +102,40 @@ fn test_look_and_connect() {
     assert!(site.addrs.len() > 0);
     assert!(site.headers.len() > 0);
 }
+
+pub fn look_and_connect2(site: &Site) -> Result<(Vec<IpAddr>, HeaderMap), anyhow::Error> {
+    info!("Running DNS lookup on `{}`...", &site.host);
+    let ips = match lookup_host(&site.host) {
+        Ok(addrs) =>
+            addrs,
+        Err(e) => {
+            warn!("Unable to make connection: {:?}", &e);
+            Vec::<IpAddr>::new()
+        }
+    };
+
+    let client = &reqwest::blocking::Client::builder().redirect(Policy::none()).build()?;
+    info!("Connecting to `{}`...", &site.host);
+    let hddrs = match client.get(format!("http://{}", &site.host)).timeout(Duration::from_secs(3)).send(){
+        Ok(resp) => {
+            debug!("`&response.headers`: {:?}", &resp.headers());
+            resp.headers().clone()
+        },
+        Err(err) => {
+            warn!("Unable to make connection: {:?}", &err);
+            HeaderMap::new()
+        }
+    };
+
+    Ok((ips, hddrs))
+}
+
+#[test]
+fn test_look_and_connect2() {
+    let mut site = Site { host: "yahoo.com".to_owned(), addrs: Vec::new(), headers: HeaderMap::new() };
+
+    (site.addrs, site.headers) = look_and_connect2(&site).unwrap();
+    
+    assert!(site.addrs.len() > 0);
+    assert!(site.headers.len() > 0);
+}
