@@ -21,6 +21,30 @@ pub struct Site {
     pub bigip: Option<String>,
 }
 
+pub fn build_subnets(input_path: &PathBuf) -> Result<Vec<Ipv4Net>, anyhow::Error> {
+    info!("Opening `{}` for reading", &input_path.display());
+    let file = File::open(input_path).with_context(||
+        format!("Failed to open `{}`", &input_path.display()))?;
+    
+    let reader = BufReader::new(file);
+
+    let mut subnets: Vec<Ipv4Net> = Vec::new();
+
+    info!("Reading lines from `{}` into `subnets` vec", &input_path.display());
+    for line in reader.lines() {
+        let line = line.with_context(||
+            format!("Failed to read `{}`", &input_path.display()))?;
+
+        debug!("`&line`: {:?}", &line);
+        match &line.parse::<Ipv4Net>() {
+            Ok(net) => subnets.push(*net),
+            Err(e) => { warn!("{}", e); }
+        }
+    }
+    debug!("`subnets`: {:?}", &subnets);
+    Ok(subnets)
+}
+
 // build_sites returns a vector of Site structs, one for each name in the input file.
 pub fn build_sites(input_path: &PathBuf) -> Result<Vec<Site>, anyhow::Error> {
     info!("Opening `{}` for reading", &input_path.display());
@@ -205,9 +229,4 @@ fn test_bigip_by_ip() {
     subnets.push("192.168.0.0/24".parse().unwrap());
 
     assert!(bigip_by_ip(&ips, &subnets));
-}
-
-pub fn build_subnets(input_path: &PathBuf) -> Result<Vec<Ipv4Net>, anyhow::Error> {
-    // TODO
-    Ok(Vec::new())
 }

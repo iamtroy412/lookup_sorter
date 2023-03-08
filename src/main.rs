@@ -49,6 +49,8 @@ fn main() -> Result<()> {
         }
 
         // Quick test
+        // Note this will overwrite the previous bigip value.
+        // Just using this for testing functionality and will adjust logic
         match lookup_sorter::bigip_by_ip(&site.addrs, &subnets) {
             true => {
                 site.bigip = Some("BigIP by IP".to_owned());
