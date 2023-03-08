@@ -1,5 +1,6 @@
 /target
 
 # Ignore input and output test files
+subnet.txt
 output.json
 test.txt
