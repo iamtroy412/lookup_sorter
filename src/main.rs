@@ -11,10 +11,10 @@ struct Args {
     /// File with list of names to query
     #[arg(short, long)]
     input_file: PathBuf,
-    // Output JSON file with results
+    /// Output JSON file with results
     #[arg(short, long)]
     output_file: PathBuf,
-    // File with list of subnets to check against
+    /// File with list of subnets to check against
     #[arg(short, long)]
     subnet_file: PathBuf,
 }
