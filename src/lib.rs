@@ -45,6 +45,17 @@ pub fn build_subnets(input_path: &PathBuf) -> Result<Vec<Ipv4Net>, anyhow::Error
     Ok(subnets)
 }
 
+#[test]
+fn test_build_subnets() {
+    // TODO
+    let file = assert_fs::NamedTempFile::new("sample.txt").unwrap();
+    file.write_str("192.168.0.0/24\nnonsense\n172.16.0.0/24\n10.0.0.0/8").unwrap();
+
+    let result = build_subnets(&file.path().to_path_buf()).unwrap();
+    assert_eq!(Ipv4Net::new(Ipv4Addr::new(192, 168, 0, 0), 24).unwrap(), result[0]);
+    assert_eq!(Ipv4Net::new(Ipv4Addr::new(172, 16, 0, 0), 24).unwrap(), result[1]);
+}
+
 // build_sites returns a vector of Site structs, one for each name in the input file.
 pub fn build_sites(input_path: &PathBuf) -> Result<Vec<Site>, anyhow::Error> {
     info!("Opening `{}` for reading", &input_path.display());
